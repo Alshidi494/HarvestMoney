@@ -27,7 +27,7 @@ fun HomeScreen(
     ),
     onMenuClick: () -> Unit = {}
 ) {
-    val scaffoldState = rememberScaffoldState()
+    val snackbarHostState = rememberSnackbarHostState()
     val scope = rememberCoroutineScope()
 
     val points by viewModel.points.collectAsState()
@@ -40,7 +40,6 @@ fun HomeScreen(
     var showWithdrawalDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        scaffoldState = scaffoldState,
         topBar = {
             TopAppBar(
                 title = { Text("Harvest Money") },
@@ -51,7 +50,7 @@ fun HomeScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -69,7 +68,7 @@ fun HomeScreen(
                 onClick = { viewModel.showRewardedAd() },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Watch Ad (+5 points)")
+                Text("Watch Ad (+${viewModel.rewardAmount} points)")
             }
 
             Button(
@@ -77,7 +76,7 @@ fun HomeScreen(
                 enabled = points >= viewModel.minWithdrawalPoints,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Withdraw Points (${viewModel.minWithdrawalPoints} points = \$1)")
+                Text("Withdraw Points (${viewModel.minWithdrawalPoints} points = $1)")
             }
 
             // Interstitial ad on interval
@@ -189,10 +188,10 @@ fun HomeScreen(
 
         LaunchedEffect(withdrawalState) {
             when (withdrawalState) {
-                is WithdrawalState.Success -> scaffoldState.snackbarHostState.showSnackbar(
+                is WithdrawalState.Success -> snackbarHostState.showSnackbar(
                     "Withdrawal request submitted successfully!"
                 )
-                is WithdrawalState.Error -> scaffoldState.snackbarHostState.showSnackbar(
+                is WithdrawalState.Error -> snackbarHostState.showSnackbar(
                     (withdrawalState as WithdrawalState.Error).message
                 )
                 else -> {}
