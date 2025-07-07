@@ -21,7 +21,8 @@ fun SignInScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     val scope = rememberCoroutineScope()
-    val scaffoldState = rememberScaffoldState()
+    val snackbarHostState = rememberSnackbarHostState()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -29,8 +30,7 @@ fun SignInScreen(
     val authState by viewModel.authState.collectAsState()
 
     Scaffold(
-        scaffoldState = scaffoldState,
-        snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -57,7 +57,7 @@ fun SignInScreen(
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = if (passwordVisible) "Hide password" else "Show password"
                         )
                     }
@@ -89,9 +89,7 @@ fun SignInScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(
-                onClick = {
-                    scope.launch { viewModel.resetPassword(email) }
-                },
+                onClick = { scope.launch { viewModel.resetPassword(email) } },
                 enabled = email.isNotBlank() && authState !is AuthState.Loading
             ) {
                 Text("Forgot Password?")
@@ -109,9 +107,7 @@ fun SignInScreen(
                     onSignInSuccess()
                 }
                 AuthState.ResetSuccess -> LaunchedEffect(Unit) {
-                    scaffoldState.snackbarHostState.showSnackbar(
-                        "Password reset email sent."
-                    )
+                    snackbarHostState.showSnackbar("Password reset email sent.")
                 }
                 else -> Unit
             }
