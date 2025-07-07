@@ -4,14 +4,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,10 +32,15 @@ fun HomeScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val points by viewModel.points.collectAsState()
+    val withdrawalState by viewModel.withdrawalState.collectAsState()
+
+    var showWithdrawalDialog by remember { mutableStateOf(false) }
+    var selectedMethod by remember { mutableStateOf("") }
+    var accountDetails by remember { mutableStateOf("") }
+
     Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Harvest Money") },
@@ -49,121 +52,109 @@ fun HomeScreen(
             )
         }
     ) { paddingValues ->
-    val points by viewModel.points.collectAsState()
-    val withdrawalState by viewModel.withdrawalState.collectAsState()
-    
-    var showWithdrawalDialog by remember { mutableStateOf(false) }
-    var selectedMethod by remember { mutableStateOf("") }
-    var accountDetails by remember { mutableStateOf("") }            Box(modifier = Modifier
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Points and Actions section
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxSize()
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-        Text(
-            text = "Current Points: $points",
-            style = MaterialTheme.typography.headlineMedium
-        )
+                Text(
+                    text = "Current Points: $points",
+                    style = MaterialTheme.typography.headlineMedium
+                )
 
-        Button(
-            onClick = { viewModel.showRewardedAd() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Watch Ad (+5 points)")
-        }
-
-        Button(
-            onClick = { showWithdrawalDialog = true },
-            enabled = points >= 1000,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-                Text("Withdraw Points (1000 points = \$1)")
-            }
-
-            // Call showInterstitialAd after important actions
-            LaunchedEffect(points) {
-                if (points > 0 && points % 50 == 0) {
-                    viewModel.showInterstitialAd()
+                Button(
+                    onClick = { viewModel.showRewardedAd() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Watch Ad (+5 points)")
                 }
-            }
 
-            // Withdrawal History section
-            Text(
-                text = "Withdrawal History",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            
-            val withdrawals by viewModel.withdrawalHistory.collectAsState()
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                items(withdrawals) { withdrawal ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Column(
+                Button(
+                    onClick = { showWithdrawalDialog = true },
+                    enabled = points >= 1000,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Withdraw Points (1000 points = $1)")
+                }
+
+                // Show interstitial ad periodically
+                LaunchedEffect(points) {
+                    if (points > 0 && points % 50 == 0) {
+                        viewModel.showInterstitialAd()
+                    }
+                }
+
+                Text(
+                    text = "Withdrawal History",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                val withdrawals by viewModel.withdrawalHistory.collectAsState()
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    items(withdrawals) { withdrawal ->
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp)
+                                .padding(vertical = 4.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
                             ) {
-                                Text("Amount: \$${withdrawal.amount / 1000}")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Amount: $${withdrawal.amount / 1000}")
+                                    Text(
+                                        text = withdrawal.status.uppercase(),
+                                        color = when (withdrawal.status) {
+                                            "pending" -> MaterialTheme.colorScheme.primary
+                                            "completed" -> MaterialTheme.colorScheme.secondary
+                                            "rejected" -> MaterialTheme.colorScheme.error
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        }
+                                    )
+                                }
+                                Text("Method: ${withdrawal.method}")
                                 Text(
-                                    text = withdrawal.status.uppercase(),
-                                    color = when (withdrawal.status) {
-                                        "pending" -> MaterialTheme.colorScheme.primary
-                                        "completed" -> MaterialTheme.colorScheme.secondary
-                                        "rejected" -> MaterialTheme.colorScheme.error
-                                        else -> MaterialTheme.colorScheme.onSurface
-                                    }
+                                    "Date: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                        .format(Date(withdrawal.timestamp))}"
                                 )
                             }
-                            Text("Method: ${withdrawal.method}")
-                            Text(
-                                "Date: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                                    .format(Date(withdrawal.timestamp))}"
-                            )
                         }
                     }
                 }
             }
-        }
-    
-    AndroidView(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth(),
-        factory = { context ->
-            AdView(context).apply {
-                setAdSize(AdSize.BANNER)
-                adUnitId = "ca-app-pub-7816293804229825/3035899826"
-                loadAd(AdRequest.Builder().build())
-            }
-        }
-    )
-}
 
+            AndroidView(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                factory = { context ->
+                    AdView(context).apply {
+                        setAdSize(AdSize.BANNER)
+                        adUnitId = "ca-app-pub-7816293804229825/3035899826"
+                        loadAd(AdRequest.Builder().build())
+                    }
+                }
+            )
+        }
+    }
+
+    // Withdrawal Dialog
     if (showWithdrawalDialog) {
         AlertDialog(
             onDismissRequest = { showWithdrawalDialog = false },
@@ -211,34 +202,23 @@ fun HomeScreen(
         )
     }
 
-    when (withdrawalState) {
-        is WithdrawalState.Success -> {
-            LaunchedEffect(Unit) {
-                showWithdrawalDialog = false
-                // Show Snackbar instead of Text for better UX
-                val scope = rememberCoroutineScope()
-                val snackbarHostState = remember { SnackbarHostState() }
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Withdrawal request submitted successfully!",
-                        duration = SnackbarDuration.Short
-                    )
-                }
+    // Snackbar for withdrawal result
+    LaunchedEffect(withdrawalState) {
+        when (withdrawalState) {
+            is WithdrawalState.Success -> {
+                snackbarHostState.showSnackbar(
+                    message = "Withdrawal request submitted successfully!",
+                    duration = SnackbarDuration.Short
+                )
             }
-        }
-        is WithdrawalState.Error -> {
-            LaunchedEffect(Unit) {
-                val scope = rememberCoroutineScope()
-                val snackbarHostState = remember { SnackbarHostState() }
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = (withdrawalState as WithdrawalState.Error).message,
-                        duration = SnackbarDuration.Long,
-                        withDismissAction = true
-                    )
-                }
+            is WithdrawalState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = (withdrawalState as WithdrawalState.Error).message,
+                    duration = SnackbarDuration.Long,
+                    withDismissAction = true
+                )
             }
+            else -> Unit
         }
-        else -> Unit
     }
 }
