@@ -9,30 +9,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import com.harvestmoney.bounty.ui.home.HomeViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: HomeViewModel = viewModel()
 ) {
+    val scope = rememberCoroutineScope()
+    val authUser = FirebaseAuth.getInstance().currentUser
+    val profile by viewModel.profile.collectAsState()
+
     var binanceId by remember { mutableStateOf("") }
     var payeerId by remember { mutableStateOf("") }
     var isEditing by remember { mutableStateOf(false) }
-    
-    val user = FirebaseAuth.getInstance().currentUser
-    val database = FirebaseDatabase.getInstance()
 
-    // Load payment IDs
+    // Load once
     LaunchedEffect(Unit) {
-        user?.uid?.let { userId ->
-            database.reference.child("users").child(userId).get()
-                .addOnSuccessListener { snapshot ->
-                    binanceId = snapshot.child("binance").getValue(String::class.java) ?: ""
-                    payeerId = snapshot.child("payeer").getValue(String::class.java) ?: ""
-                }
-        }
+        binanceId = profile.defaultMethod.takeIf { it == "Binance" }?.let { profile.account } ?: ""
+        payeerId = profile.defaultMethod.takeIf { it == "Payeer" }?.let { profile.account } ?: ""
     }
 
     Scaffold(
@@ -59,25 +59,13 @@ fun ProfileScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Email
-            Text(
-                text = "Email",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = user?.email ?: "",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Text("Email", style = MaterialTheme.typography.titleMedium)
+            Text(authUser?.email ?: "", style = MaterialTheme.typography.bodyLarge)
 
             Divider()
 
-            // Payment Methods
-            Text(
-                text = "Payment Methods",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text("Payment Methods", style = MaterialTheme.typography.titleMedium)
 
-            // Binance ID
             OutlinedTextField(
                 value = binanceId,
                 onValueChange = { if (isEditing) binanceId = it },
@@ -86,7 +74,6 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Payeer ID
             OutlinedTextField(
                 value = payeerId,
                 onValueChange = { if (isEditing) payeerId = it },
@@ -98,12 +85,16 @@ fun ProfileScreen(
             if (isEditing) {
                 Button(
                     onClick = {
-                        user?.uid?.let { userId ->
-                            database.reference.child("users").child(userId)
-                                .updateChildren(mapOf(
-                                    "binance" to binanceId,
-                                    "payeer" to payeerId
-                                )).addOnSuccessListener {
+                        val uid = authUser?.uid ?: return@Button
+                        val database = FirebaseDatabase.getInstance()
+                        val updates = mapOf(
+                            "binance" to binanceId,
+                            "payeer" to payeerId
+                        )
+                        scope.launch {
+                            database.reference.child("users").child(uid)
+                                .updateChildren(updates)
+                                .addOnSuccessListener {
                                     isEditing = false
                                 }
                         }
