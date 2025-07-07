@@ -21,12 +21,19 @@ class HomeViewModel(
     private val context: Context
 ) : ViewModel() {
 
+    // إعلانات ومتغيرات المكافآت
+    val rewardAmount = 5  // النقاط الممنوحة لكل إعلان
+    val minWithdrawalPoints = 1000  // الحد الأدنى للسحب
+    val interstitialInterval = 50  // عدد النقاط بين كل إعلان
+
     private val auth = FirebaseAuth.getInstance()
     private val database = FirebaseDatabase.getInstance()
 
     private var rewardedAd: RewardedAd? = null
     private var interstitialAd: InterstitialAd? = null
+    private var adCounter = 0
 
+    // حالات البيانات
     private val _points = MutableStateFlow(0)
     val points: StateFlow<Int> = _points
 
@@ -39,58 +46,70 @@ class HomeViewModel(
     private val _profile = MutableStateFlow(Profile())
     val profile: StateFlow<Profile> = _profile
 
-    val minWithdrawalPoints = 1000
-    val interstitialInterval = 50
-    private var adCounter = 0
-
     init {
+        loadInitialData()
+        loadAds()
+    }
+
+    private fun loadInitialData() {
         observeUserPoints()
         observeProfile()
         observeWithdrawals()
+    }
+
+    private fun loadAds() {
         loadRewardedAd()
         loadInterstitialAd()
     }
 
     private fun observeUserPoints() {
-        val userId = auth.currentUser?.uid ?: return
-        database.reference.child("users").child(userId).child("points")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    _points.value = snapshot.getValue(Int::class.java) ?: 0
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
+        auth.currentUser?.uid?.let { userId ->
+            database.reference.child("users").child(userId).child("points")
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        _points.value = snapshot.getValue(Int::class.java) ?: 0
+                    }
+                    override fun onCancelled(error: DatabaseError) {
+                        _withdrawalState.value = WithdrawalState.Error("Failed to load points")
+                    }
+                })
+        }
     }
 
     private fun observeProfile() {
-        val userId = auth.currentUser?.uid ?: return
-        database.reference.child("users").child(userId)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val method = snapshot.child("binance").value as? String ?: ""
-                    val payeer = snapshot.child("payeer").value as? String ?: ""
-                    _profile.value = Profile(
-                        defaultMethod = if (method.isNotEmpty()) "Binance" else if (payeer.isNotEmpty()) "Payeer" else "",
-                        account = if (method.isNotEmpty()) method else payeer
-                    )
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
+        auth.currentUser?.uid?.let { userId ->
+            database.reference.child("users").child(userId)
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        val method = snapshot.child("binance").value as? String ?: ""
+                        val payeer = snapshot.child("payeer").value as? String ?: ""
+                        _profile.value = Profile(
+                            defaultMethod = if (method.isNotEmpty()) "Binance" else "Payeer",
+                            account = method.ifEmpty { payeer }
+                        )
+                    }
+                    override fun onCancelled(error: DatabaseError) {
+                        _withdrawalState.value = WithdrawalState.Error("Failed to load profile")
+                    }
+                })
+        }
     }
 
     private fun observeWithdrawals() {
-        val userId = auth.currentUser?.uid ?: return
-        database.reference.child("withdrawals").child(userId)
-            .orderByChild("timestamp")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val list = snapshot.children.mapNotNull {
-                        it.getValue(Withdrawal::class.java)?.copy(id = it.key ?: "")
-                    }.reversed()
-                    _withdrawalHistory.value = list
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
+        auth.currentUser?.uid?.let { userId ->
+            database.reference.child("withdrawals").child(userId)
+                .orderByChild("timestamp")
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        _withdrawalHistory.value = snapshot.children.mapNotNull {
+                            it.getValue(Withdrawal::class.java)?.copy(id = it.key ?: "")
+                        }.reversed()
+                    }
+                    override fun onCancelled(error: DatabaseError) {
+                        _withdrawalState.value = WithdrawalState.Error("Failed to load withdrawals")
+                    }
+                })
+        }
     }
 
     private fun loadRewardedAd() {
@@ -108,14 +127,20 @@ class HomeViewModel(
 
     fun showRewardedAd() {
         rewardedAd?.show(context as Activity) { rewardItem: RewardItem ->
-            val userId = auth.currentUser?.uid ?: return@show
-            val pointsRef = database.reference.child("users").child(userId).child("points")
-            pointsRef.get().addOnSuccessListener {
-                val current = it.getValue(Int::class.java) ?: 0
-                pointsRef.setValue(current + rewardItem.amount)
-            }
+            updateUserPoints(rewardItem.amount)
             loadRewardedAd()
         } ?: loadRewardedAd()
+    }
+
+    private fun updateUserPoints(amount: Int) {
+        auth.currentUser?.uid?.let { userId ->
+            database.reference.child("users").child(userId).child("points")
+                .get().addOnSuccessListener { snapshot ->
+                    val current = snapshot.getValue(Int::class.java) ?: 0
+                    database.reference.child("users").child(userId).child("points")
+                        .setValue(current + amount)
+                }
+        }
     }
 
     private fun loadInterstitialAd() {
@@ -132,13 +157,10 @@ class HomeViewModel(
     }
 
     fun showInterstitialAd() {
-        adCounter++
-        if (adCounter % 3 == 0) {
-            interstitialAd?.let { ad ->
-                ad.show(context as Activity)
-                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+        if (adCounter++ % 3 == 0) {
+            interstitialAd?.show(context as Activity)?.also {
+                it.fullScreenContentCallback = object : FullScreenContentCallback() {
                     override fun onAdDismissedFullScreenContent() {
-                        interstitialAd = null
                         loadInterstitialAd()
                     }
                 }
@@ -151,45 +173,63 @@ class HomeViewModel(
             _withdrawalState.value = WithdrawalState.Error("User not authenticated")
             return
         }
-        if (account.isBlank()) {
-            _withdrawalState.value = WithdrawalState.Error("Please enter your ${method.lowercase()} account")
-            return
-        }
-        if (_points.value < minWithdrawalPoints) {
-            _withdrawalState.value = WithdrawalState.Error("You need at least $minWithdrawalPoints points")
-            return
-        }
-        if (_withdrawalHistory.value.any { it.status == "pending" }) {
-            _withdrawalState.value = WithdrawalState.Error("You already have a pending request")
-            return
-        }
-        val last = _withdrawalHistory.value.maxByOrNull { it.timestamp }
-        last?.let {
-            if (System.currentTimeMillis() - it.timestamp < 24 * 60 * 60 * 1000) {
-                _withdrawalState.value = WithdrawalState.Error("You can only withdraw once every 24 hours")
-                return
+
+        when {
+            account.isBlank() -> {
+                _withdrawalState.value = WithdrawalState.Error("Please enter your account details")
             }
+            _points.value < minWithdrawalPoints -> {
+                _withdrawalState.value = WithdrawalState.Error("Minimum withdrawal is $minWithdrawalPoints points")
+            }
+            hasPendingWithdrawal() -> {
+                _withdrawalState.value = WithdrawalState.Error("You have a pending withdrawal")
+            }
+            !canWithdrawAgain() -> {
+                _withdrawalState.value = WithdrawalState.Error("Only one withdrawal per 24 hours")
+            }
+            else -> processWithdrawal(userId, method, account)
         }
-        val ref = database.reference.child("withdrawals").child(userId).push()
+    }
+
+    private fun hasPendingWithdrawal(): Boolean {
+        return _withdrawalHistory.value.any { it.status == "pending" }
+    }
+
+    private fun canWithdrawAgain(): Boolean {
+        val lastWithdrawal = _withdrawalHistory.value.maxByOrNull { it.timestamp }
+        return lastWithdrawal?.let {
+            System.currentTimeMillis() - it.timestamp > 24 * 60 * 60 * 1000
+        } ?: true
+    }
+
+    private fun processWithdrawal(userId: String, method: String, account: String) {
+        val withdrawalRef = database.reference.child("withdrawals").child(userId).push()
         val withdrawal = Withdrawal(
-            id = ref.key ?: "",
+            id = withdrawalRef.key ?: "",
             method = method,
             account = account,
             amount = minWithdrawalPoints,
             status = "pending",
-            timestamp = System.currentTimeMillis(),
-            userId = userId
+            timestamp = System.currentTimeMillis()
         )
-        ref.setValue(withdrawal).addOnSuccessListener {
-            _withdrawalState.value = WithdrawalState.Success
-            database.reference.child("users").child(userId).child("points")
-                .setValue(_points.value - minWithdrawalPoints)
-        }.addOnFailureListener {
-            _withdrawalState.value = WithdrawalState.Error(it.message ?: "Withdrawal failed")
-        }
+
+        withdrawalRef.setValue(withdrawal)
+            .addOnSuccessListener {
+                updatePointsAfterWithdrawal(userId)
+                _withdrawalState.value = WithdrawalState.Success
+            }
+            .addOnFailureListener {
+                _withdrawalState.value = WithdrawalState.Error(it.message ?: "Withdrawal failed")
+            }
+    }
+
+    private fun updatePointsAfterWithdrawal(userId: String) {
+        database.reference.child("users").child(userId).child("points")
+            .setValue(_points.value - minWithdrawalPoints)
     }
 }
 
+// Data Classes
 sealed class WithdrawalState {
     object Initial : WithdrawalState()
     object Success : WithdrawalState()
@@ -201,6 +241,16 @@ data class Profile(
     val account: String = ""
 )
 
+data class Withdrawal(
+    val id: String = "",
+    val method: String = "",
+    val account: String = "",
+    val amount: Int = 0,
+    val status: String = "",
+    val timestamp: Long = 0L
+)
+
+// Factory Class
 class HomeViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
