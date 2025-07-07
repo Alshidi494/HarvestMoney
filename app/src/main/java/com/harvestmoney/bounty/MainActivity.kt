@@ -5,10 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -52,7 +56,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    App()
+                    App()  // composable function
                 }
             }
         }
@@ -77,13 +81,9 @@ class MainActivity : ComponentActivity() {
                     onNavigateToPrivacyPolicy = { navController.navigate("privacy-policy") },
                     onSignOut = {
                         FirebaseAuth.getInstance().signOut()
-                        navController.navigate("signIn") {
-                            popUpTo(0) { inclusive = true }
-                        }
+                        navController.navigate("signIn") { popUpTo(0) { inclusive = true } }
                     },
-                    closeDrawer = {
-                        scope.launch { drawerState.close() }
-                    }
+                    closeDrawer = { scope.launch { drawerState.close() } }
                 )
             },
             gesturesEnabled = FirebaseAuth.getInstance().currentUser != null
@@ -92,43 +92,21 @@ class MainActivity : ComponentActivity() {
                 composable("signIn") {
                     SignInScreen(
                         onNavigateToSignUp = { navController.navigate("signUp") },
-                        onSignInSuccess = {
-                            navController.navigate("home") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
+                        onSignInSuccess = { navController.navigate("home") { popUpTo(0) { inclusive = true } } }
                     )
                 }
                 composable("signUp") {
                     SignUpScreen(
                         onNavigateToSignIn = { navController.navigate("signIn") },
-                        onSignUpSuccess = {
-                            navController.navigate("home") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
+                        onSignUpSuccess = { navController.navigate("home") { popUpTo(0) { inclusive = true } } }
                     )
                 }
-                composable("home") {
-                    HomeScreen(onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    })
-                }
-                composable("profile") {
-                    ProfileScreen(onNavigateBack = { navController.navigateUp() })
-                }
-                composable("history") {
-                    HistoryScreen(onNavigateBack = { navController.navigateUp() })
-                }
-                composable("faq") {
-                    FAQScreen(onNavigateBack = { navController.navigateUp() })
-                }
-                composable("support") {
-                    SupportScreen(onNavigateBack = { navController.navigateUp() })
-                }
-                composable("privacy-policy") {
-                    PrivacyPolicyScreen(onNavigateBack = { navController.navigateUp() })
-                }
+                composable("home") { HomeScreen(onMenuClick = { scope.launch { drawerState.open() } }) }
+                composable("profile") { ProfileScreen(onNavigateBack = { navController.navigateUp() }) }
+                composable("history") { HistoryScreen(onNavigateBack = { navController.navigateUp() }) }
+                composable("faq") { FAQScreen(onNavigateBack = { navController.navigateUp() }) }
+                composable("support") { SupportScreen(onNavigateBack = { navController.navigateUp() }) }
+                composable("privacy-policy") { PrivacyPolicyScreen(onNavigateBack = { navController.navigateUp() }) }
             }
         }
     }
