@@ -6,13 +6,13 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun SignInScreen(
@@ -63,15 +63,15 @@ fun SignInScreen(
 
         Button(
             onClick = {
-                scope.launch {
-                    viewModel.signIn(email, password)
-                }
+                scope.launch { viewModel.signIn(email, password) }
             },
             enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Sign In")
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         TextButton(
             onClick = onNavigateToSignUp,
@@ -80,16 +80,18 @@ fun SignInScreen(
             Text("Don't have an account? Sign Up")
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         TextButton(
-            onClick = { 
-                scope.launch {
-                    viewModel.resetPassword(email)
-                }
+            onClick = {
+                scope.launch { viewModel.resetPassword(email) }
             },
             enabled = email.isNotBlank() && authState !is AuthState.Loading
         ) {
             Text("Forgot Password?")
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         when (authState) {
             is AuthState.Loading -> CircularProgressIndicator()
