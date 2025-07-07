@@ -21,7 +21,8 @@ fun SignUpScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     val scope = rememberCoroutineScope()
-    val scaffoldState = rememberScaffoldState()
+    val snackbarHostState = rememberSnackbarHostState()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -29,8 +30,7 @@ fun SignUpScreen(
     val authState by viewModel.authState.collectAsState()
 
     Scaffold(
-        scaffoldState = scaffoldState,
-        snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -57,7 +57,7 @@ fun SignUpScreen(
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = if (passwordVisible) "Hide password" else "Show password"
                         )
                     }
@@ -91,6 +91,9 @@ fun SignUpScreen(
                 )
                 AuthState.SignUpSuccess -> LaunchedEffect(Unit) {
                     onSignUpSuccess()
+                }
+                AuthState.ResetSuccess -> LaunchedEffect(Unit) {
+                    snackbarHostState.showSnackbar("Password reset email sent.")
                 }
                 else -> Unit
             }
