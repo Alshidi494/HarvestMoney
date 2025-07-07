@@ -21,101 +21,100 @@ fun SignInScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     val scope = rememberCoroutineScope()
+    val scaffoldState = rememberScaffoldState()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isResetFlow by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    Scaffold(
+        scaffoldState = scaffoldState,
+        snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .padding(paddingValues),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible) "Hide password" else "Show password"
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    scope.launch { viewModel.signIn(email, password) }
+                },
+                enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Sign In")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = onNavigateToSignUp,
+                enabled = authState !is AuthState.Loading
+            ) {
+                Text("Don't have an account? Sign Up")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = {
+                    scope.launch { viewModel.resetPassword(email) }
+                },
+                enabled = email.isNotBlank() && authState !is AuthState.Loading
+            ) {
+                Text("Forgot Password?")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (authState) {
+                is AuthState.Loading -> CircularProgressIndicator()
+                is AuthState.Error -> Text(
+                    text = (authState as AuthState.Error).message,
+                    color = MaterialTheme.colorScheme.error
+                )
+                AuthState.SignInSuccess -> LaunchedEffect(Unit) {
+                    onSignInSuccess()
+                }
+                AuthState.ResetSuccess -> LaunchedEffect(Unit) {
+                    scaffoldState.snackbarHostState.showSnackbar(
+                        "Password reset email sent."
                     )
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                // Sign in flow
-                scope.launch { viewModel.signIn(email, password) }
-                isResetFlow = false
-            },
-            enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Sign In")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(
-            onClick = onNavigateToSignUp,
-            enabled = authState !is AuthState.Loading
-        ) {
-            Text("Don't have an account? Sign Up")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(
-            onClick = {
-                // Reset password flow
-                scope.launch { viewModel.resetPassword(email) }
-                isResetFlow = true
-            },
-            enabled = email.isNotBlank() && authState !is AuthState.Loading
-        ) {
-            Text("Forgot Password?")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when (authState) {
-            is AuthState.Loading -> CircularProgressIndicator()
-            is AuthState.Error -> Text(
-                text = (authState as AuthState.Error).message,
-                color = MaterialTheme.colorScheme.error
-            )
-            is AuthState.Success -> {
-                if (!isResetFlow) {
-                    // Successful sign in
-                    LaunchedEffect(Unit) { onSignInSuccess() }
-                } else {
-                    // Successful password reset
-                    LaunchedEffect(Unit) {
-                        // Optionally show a confirmation message here
-                    }
-                }
+                else -> Unit
             }
-            else -> Unit
         }
     }
 }
