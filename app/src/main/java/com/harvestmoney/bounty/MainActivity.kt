@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private var appOpenAd: AppOpenAd? = null
+    private var hasShownAppOpenAd = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +48,7 @@ class MainActivity : ComponentActivity() {
         // Initialize AdMob
         MobileAds.initialize(this)
 
-        // Load app open ad
+        // Load app open ad but do not show immediately
         loadAppOpenAd()
 
         setContent {
@@ -59,6 +60,15 @@ class MainActivity : ComponentActivity() {
                     App()  // composable function
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Show the app open ad only once per launch
+        if (!hasShownAppOpenAd && appOpenAd != null) {
+            showAppOpenAd()
+            hasShownAppOpenAd = true
         }
     }
 
@@ -121,7 +131,7 @@ class MainActivity : ComponentActivity() {
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
                     appOpenAd = ad
-                    showAppOpenAd()
+                    // Do not auto-show here; will show in onResume once per launch
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
@@ -136,12 +146,10 @@ class MainActivity : ComponentActivity() {
             setFullScreenContentCallback(object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     appOpenAd = null
-                    loadAppOpenAd()
                 }
 
                 override fun onAdFailedToShowFullScreenContent(error: AdError) {
                     appOpenAd = null
-                    loadAppOpenAd()
                 }
             })
             show(this@MainActivity)
