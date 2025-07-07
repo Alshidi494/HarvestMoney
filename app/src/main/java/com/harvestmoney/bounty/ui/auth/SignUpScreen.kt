@@ -12,6 +12,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun SignUpScreen(
@@ -19,6 +20,7 @@ fun SignUpScreen(
     onSignUpSuccess: () -> Unit,
     viewModel: AuthViewModel = viewModel()
 ) {
+    val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -61,8 +63,11 @@ fun SignUpScreen(
 
         Button(
             onClick = {
-                viewModel.signUp(email, password)
+                scope.launch {
+                    viewModel.signUp(email, password)
+                }
             },
+            enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Sign Up")
