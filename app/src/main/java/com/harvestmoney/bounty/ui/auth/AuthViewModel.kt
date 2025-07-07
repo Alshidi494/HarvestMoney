@@ -17,7 +17,7 @@ class AuthViewModel : ViewModel() {
         try {
             _authState.value = AuthState.Loading
             auth.signInWithEmailAndPassword(email, password).await()
-            _authState.value = AuthState.Success
+            _authState.value = AuthState.SignInSuccess
         } catch (e: Exception) {
             _authState.value = AuthState.Error(e.message ?: "Authentication failed")
         }
@@ -25,7 +25,6 @@ class AuthViewModel : ViewModel() {
 
     suspend fun signUp(email: String, password: String) {
         try {
-            // Validate email and password
             if (!isValidEmail(email)) {
                 _authState.value = AuthState.Error("Invalid email format")
                 return
@@ -37,11 +36,20 @@ class AuthViewModel : ViewModel() {
 
             _authState.value = AuthState.Loading
             auth.createUserWithEmailAndPassword(email, password).await()
-            // Create initial user record in Realtime Database
             createUserRecord(auth.currentUser?.uid ?: return, email)
-            _authState.value = AuthState.Success
+            _authState.value = AuthState.SignUpSuccess
         } catch (e: Exception) {
             _authState.value = AuthState.Error(e.message ?: "Registration failed")
+        }
+    }
+
+    suspend fun resetPassword(email: String) {
+        try {
+            _authState.value = AuthState.Loading
+            auth.sendPasswordResetEmail(email).await()
+            _authState.value = AuthState.ResetSuccess
+        } catch (e: Exception) {
+            _authState.value = AuthState.Error(e.message ?: "Password reset failed")
         }
     }
 
@@ -53,27 +61,15 @@ class AuthViewModel : ViewModel() {
         return password.length >= 6
     }
 
-    suspend fun resetPassword(email: String) {
-        try {
-            _authState.value = AuthState.Loading
-            auth.sendPasswordResetEmail(email).await()
-            _authState.value = AuthState.Success
-        } catch (e: Exception) {
-            _authState.value = AuthState.Error(e.message ?: "Password reset failed")
-        }
-    }
-
     private suspend fun createUserRecord(userId: String, email: String) {
         val database = FirebaseDatabase.getInstance()
         val userRef = database.reference.child("users").child(userId)
-        
         val userData = mapOf(
             "email" to email,
             "points" to 0,
             "binance" to "",
             "payeer" to ""
         )
-        
         userRef.setValue(userData).await()
     }
 }
@@ -81,6 +77,8 @@ class AuthViewModel : ViewModel() {
 sealed class AuthState {
     object Initial : AuthState()
     object Loading : AuthState()
-    object Success : AuthState()
+    object SignInSuccess : AuthState()
+    object SignUpSuccess : AuthState()
+    object ResetSuccess : AuthState()
     data class Error(val message: String) : AuthState()
 }
