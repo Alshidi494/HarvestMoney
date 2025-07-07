@@ -12,14 +12,11 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.namespace == "com.android") {
-                useVersion("8.6.0")
-            }
-            if (requested.id.id == "org.jetbrains.kotlin.android") {
-                useVersion("1.9.22")
-            }
-            if (requested.id.id == "com.google.gms.google-services") {
-                useVersion("4.4.1")
+            when (requested.id.toString()) {
+                "com.android.application" -> 
+                    useVersion(providers.gradleProperty("agpVersion").get())
+                "org.jetbrains.kotlin.android" -> 
+                    useVersion(providers.gradleProperty("kotlinVersion").get())
             }
         }
     }
