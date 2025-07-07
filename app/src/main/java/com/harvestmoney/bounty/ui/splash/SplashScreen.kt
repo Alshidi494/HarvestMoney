@@ -1,4 +1,4 @@
-﻿// File: ui/splash/SplashScreen.kt
+// File: ui/splash/SplashScreen.kt
 package com.harvestmoney.bounty.ui.splash
 
 import android.app.Activity
@@ -27,12 +27,12 @@ fun SplashScreen(navController: NavController) {
     var maintenance by remember { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(Unit) {
-        // 1) فحص الإنترنت
+        // 1) Check network
         if (!hasNetwork(context)) {
             showNoInternet = true
             return@LaunchedEffect
         }
-        // 2) جلب قيمة Maintenance
+        // 2) Fetch maintenance flag
         FirebaseDatabase.getInstance()
             .getReference("Maintenance")
             .get()
@@ -44,13 +44,21 @@ fun SplashScreen(navController: NavController) {
             }
     }
 
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box(Modifier.fillMaxSize(), Alignment.Center) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
             when {
-                showNoInternet -> { /* handled below */ }
+                showNoInternet -> Unit // dialog handled below
                 maintenance == null -> {
-                    // لودرز مع اللوجو
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Loading logo
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Image(
                             painter = painterResource(R.mipmap.ic_launcher),
                             contentDescription = "Logo",
@@ -60,12 +68,9 @@ fun SplashScreen(navController: NavController) {
                         CircularProgressIndicator()
                     }
                 }
-                maintenance == true -> {
-                    // شاشة الصيانة
-                    MaintenanceScreen()
-                }
+                maintenance == true -> MaintenanceScreen(context as Activity)
                 maintenance == false -> {
-                    // نجاح الفحوصات، انتقل بعد تأخير
+                    // proceed after delay
                     LaunchedEffect(Unit) {
                         delay(2000)
                         val dest = if (FirebaseAuth.getInstance().currentUser != null) "home" else "signIn"
@@ -75,24 +80,25 @@ fun SplashScreen(navController: NavController) {
             }
         }
 
-        // Dialog: لا إنترنت
+        // No Internet Dialog
         if (showNoInternet) {
             AlertDialog(
                 onDismissRequest = {},
                 title = { Text("No Internet") },
                 text = { Text("Please check your connection.") },
                 confirmButton = {
-                    TextButton {
+                    TextButton(onClick = {
                         showNoInternet = false
-                        // نعيد المحاولة
                         if (!hasNetwork(context)) showNoInternet = true
                         else maintenance = null
-                    } { Text("Retry") }
+                    }) {
+                        Text("Retry")
+                    }
                 },
                 dismissButton = {
-                    TextButton {
-                        (context as? Activity)?.finish()
-                    } { Text("Exit") }
+                    TextButton(onClick = { (context as? Activity)?.finish() }) {
+                        Text("Exit")
+                    }
                 }
             )
         }
@@ -100,14 +106,23 @@ fun SplashScreen(navController: NavController) {
 }
 
 @Composable
-private fun MaintenanceScreen() {
-    Box(Modifier.fillMaxSize(), Alignment.Center) {
+private fun MaintenanceScreen(activity: Activity) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("We'll be back soon!", style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = "We'll be back soon!",
+                style = MaterialTheme.typography.titleLarge
+            )
             Spacer(Modifier.height(8.dp))
-            Text("App under maintenance.", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = "App under maintenance.",
+                style = MaterialTheme.typography.bodyMedium
+            )
             Spacer(Modifier.height(16.dp))
-            Button(onClick = { /* Exit app */ }) {
+            Button(onClick = { activity.finish() }) {
                 Text("Exit")
             }
         }
