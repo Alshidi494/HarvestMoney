@@ -24,6 +24,7 @@ fun SignInScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isResetFlow by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
 
@@ -63,7 +64,9 @@ fun SignInScreen(
 
         Button(
             onClick = {
+                // Sign in flow
                 scope.launch { viewModel.signIn(email, password) }
+                isResetFlow = false
             },
             enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
             modifier = Modifier.fillMaxWidth()
@@ -84,7 +87,9 @@ fun SignInScreen(
 
         TextButton(
             onClick = {
+                // Reset password flow
                 scope.launch { viewModel.resetPassword(email) }
+                isResetFlow = true
             },
             enabled = email.isNotBlank() && authState !is AuthState.Loading
         ) {
@@ -99,7 +104,17 @@ fun SignInScreen(
                 text = (authState as AuthState.Error).message,
                 color = MaterialTheme.colorScheme.error
             )
-            is AuthState.Success -> LaunchedEffect(Unit) { onSignInSuccess() }
+            is AuthState.Success -> {
+                if (!isResetFlow) {
+                    // Successful sign in
+                    LaunchedEffect(Unit) { onSignInSuccess() }
+                } else {
+                    // Successful password reset
+                    LaunchedEffect(Unit) {
+                        // Optionally show a confirmation message here
+                    }
+                }
+            }
             else -> Unit
         }
     }
