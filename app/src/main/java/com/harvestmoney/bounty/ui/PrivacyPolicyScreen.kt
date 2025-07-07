@@ -138,7 +138,7 @@ fun PrivacyPolicyScreen(
                 title = "9. Contact Us",
                 content = """
                     For privacy-related questions, contact us at:
-                    support@harvestmoney.com
+                    devv01.supp@gmail.com
                 """.trimIndent()
             )
         }
