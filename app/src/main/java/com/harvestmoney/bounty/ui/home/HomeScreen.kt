@@ -7,6 +7,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,7 +30,12 @@ fun HomeScreen(
     ),
     onMenuClick: () -> Unit = {}
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Harvest Money") },
@@ -85,7 +93,9 @@ fun HomeScreen(
 
             // Call showInterstitialAd after important actions
             LaunchedEffect(points) {
-                viewModel.showInterstitialAd()
+                if (points > 0 && points % 50 == 0) {
+                    viewModel.showInterstitialAd()
+                }
             }
 
             // Withdrawal History section
@@ -202,14 +212,30 @@ fun HomeScreen(
     when (withdrawalState) {
         is WithdrawalState.Success -> {
             LaunchedEffect(Unit) {
-                // Show success message
+                showWithdrawalDialog = false
+                // Show Snackbar instead of Text for better UX
+                val scope = rememberCoroutineScope()
+                val snackbarHostState = remember { SnackbarHostState() }
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Withdrawal request submitted successfully!",
+                        duration = SnackbarDuration.Short
+                    )
+                }
             }
         }
         is WithdrawalState.Error -> {
-            Text(
-                text = (withdrawalState as WithdrawalState.Error).message,
-                color = MaterialTheme.colorScheme.error
-            )
+            LaunchedEffect(Unit) {
+                val scope = rememberCoroutineScope()
+                val snackbarHostState = remember { SnackbarHostState() }
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = (withdrawalState as WithdrawalState.Error).message,
+                        duration = SnackbarDuration.Long,
+                        withDismissAction = true
+                    )
+                }
+            }
         }
         else -> Unit
     }

@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,6 +20,7 @@ fun SignInScreen(
     onSignInSuccess: () -> Unit,
     viewModel: AuthViewModel = viewModel()
 ) {
+    val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -61,19 +63,30 @@ fun SignInScreen(
 
         Button(
             onClick = {
-                viewModel.signIn(email, password)
+                scope.launch {
+                    viewModel.signIn(email, password)
+                }
             },
+            enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Sign In")
         }
 
-        TextButton(onClick = onNavigateToSignUp) {
+        TextButton(
+            onClick = onNavigateToSignUp,
+            enabled = authState !is AuthState.Loading
+        ) {
             Text("Don't have an account? Sign Up")
         }
 
         TextButton(
-            onClick = { viewModel.resetPassword(email) }
+            onClick = { 
+                scope.launch {
+                    viewModel.resetPassword(email)
+                }
+            },
+            enabled = email.isNotBlank() && authState !is AuthState.Loading
         ) {
             Text("Forgot Password?")
         }

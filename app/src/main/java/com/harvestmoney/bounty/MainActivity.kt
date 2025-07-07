@@ -17,7 +17,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.harvestmoney.bounty.ui.auth.SignInScreen
 import com.harvestmoney.bounty.ui.auth.SignUpScreen
 import com.harvestmoney.bounty.ui.components.AppDrawer
+import com.harvestmoney.bounty.ui.faq.FAQScreen
+import com.harvestmoney.bounty.ui.history.HistoryScreen
 import com.harvestmoney.bounty.ui.home.HomeScreen
+import com.harvestmoney.bounty.ui.PrivacyPolicyScreen
+import com.harvestmoney.bounty.ui.profile.ProfileScreen
+import com.harvestmoney.bounty.ui.support.SupportScreen
 import com.harvestmoney.bounty.ui.theme.HarvestMoneyTheme
 import kotlinx.coroutines.launch
 
@@ -77,31 +82,55 @@ fun App() {
         gesturesEnabled = FirebaseAuth.getInstance().currentUser != null
     ) {
         NavHost(navController = navController, startDestination = startDestination) {
-        composable("signIn") {
-            SignInScreen(
-                onNavigateToSignUp = { navController.navigate("signUp") },
-                onSignInSuccess = { navController.navigate("home") }
-            )
+            composable("signIn") {
+                SignInScreen(
+                    onNavigateToSignUp = { navController.navigate("signUp") },
+                    onSignInSuccess = { navController.navigate("home") {
+                        popUpTo(0) { inclusive = true }
+                    }}
+                )
+            }
+            composable("signUp") {
+                SignUpScreen(
+                    onNavigateToSignIn = { navController.navigate("signIn") },
+                    onSignUpSuccess = { navController.navigate("home") {
+                        popUpTo(0) { inclusive = true }
+                    }}
+                )
+            }
+            composable("home") {
+                HomeScreen(
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            }
+            composable("profile") {
+                ProfileScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+            composable("history") {
+                HistoryScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+            composable("faq") {
+                FAQScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+            composable("support") {
+                SupportScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+            composable("privacy-policy") {
+                PrivacyPolicyScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
         }
-        composable("signUp") {
-            SignUpScreen(
-                onNavigateToSignIn = { navController.navigate("signIn") },
-                onSignUpSuccess = { navController.navigate("home") }
-            )
-        }
-        composable("home") {
-            HomeScreen(
-                onMenuClick = {
-                    scope.launch { drawerState.open() }
-                }
-            )
-        }
-        composable("privacy-policy") {
-            PrivacyPolicyScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
-        }
-    }
   }
 }
 
@@ -111,6 +140,7 @@ private fun loadAppOpenAd() {
         this,
         "ca-app-pub-7816293804229825/6981053694",
         request,
+        AppOpenAd.APP_OPEN_AD_ORIENTATION_PORTRAIT,
         object : AppOpenAd.AppOpenAdLoadCallback() {
             override fun onAdLoaded(ad: AppOpenAd) {
                 appOpenAd = ad
@@ -124,5 +154,18 @@ private fun loadAppOpenAd() {
 }
 
 private fun showAppOpenAd() {
-    appOpenAd?.show(this)
+    val ad = appOpenAd
+    if (ad != null) {
+        ad.setFullScreenContentCallback(object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                appOpenAd = null
+                loadAppOpenAd() // Load the next ad
+            }
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                appOpenAd = null
+                loadAppOpenAd() // Try loading another ad
+            }
+        })
+        ad.show(this)
+    }
 }
