@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
@@ -33,6 +32,7 @@ import com.harvestmoney.bounty.ui.history.HistoryScreen
 import com.harvestmoney.bounty.ui.home.HomeScreen
 import com.harvestmoney.bounty.ui.PrivacyPolicyScreen
 import com.harvestmoney.bounty.ui.profile.ProfileScreen
+import com.harvestmoney.bounty.ui.splash.SplashScreen
 import com.harvestmoney.bounty.ui.support.SupportScreen
 import com.harvestmoney.bounty.ui.theme.HarvestMoneyTheme
 import kotlinx.coroutines.launch
@@ -47,8 +47,6 @@ class MainActivity : ComponentActivity() {
 
         // Initialize AdMob
         MobileAds.initialize(this)
-
-        // Load app open ad but do not show immediately
         loadAppOpenAd()
 
         setContent {
@@ -57,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    App()  // composable function
+                    App()
                 }
             }
         }
@@ -65,7 +63,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Show the app open ad only once per launch
         if (!hasShownAppOpenAd && appOpenAd != null) {
             showAppOpenAd()
             hasShownAppOpenAd = true
@@ -75,7 +72,6 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun App() {
         val navController = rememberNavController()
-        val startDestination = if (FirebaseAuth.getInstance().currentUser != null) "home" else "signIn"
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
         val scope = rememberCoroutineScope()
 
@@ -98,25 +94,47 @@ class MainActivity : ComponentActivity() {
             },
             gesturesEnabled = FirebaseAuth.getInstance().currentUser != null
         ) {
-            NavHost(navController = navController, startDestination = startDestination) {
+            NavHost(
+                navController = navController,
+                startDestination = "splash"
+            ) {
+                composable("splash") {
+                    SplashScreen(navController)
+                }
                 composable("signIn") {
                     SignInScreen(
                         onNavigateToSignUp = { navController.navigate("signUp") },
-                        onSignInSuccess = { navController.navigate("home") { popUpTo(0) { inclusive = true } } }
+                        onSignInSuccess = {
+                            navController.navigate("home") { popUpTo(0) { inclusive = true } }
+                        }
                     )
                 }
                 composable("signUp") {
                     SignUpScreen(
                         onNavigateToSignIn = { navController.navigate("signIn") },
-                        onSignUpSuccess = { navController.navigate("home") { popUpTo(0) { inclusive = true } } }
+                        onSignUpSuccess = {
+                            navController.navigate("home") { popUpTo(0) { inclusive = true } }
+                        }
                     )
                 }
-                composable("home") { HomeScreen(onMenuClick = { scope.launch { drawerState.open() } }) }
-                composable("profile") { ProfileScreen(onNavigateBack = { navController.navigateUp() }) }
-                composable("history") { HistoryScreen(onNavigateBack = { navController.navigateUp() }) }
-                composable("faq") { FAQScreen(onNavigateBack = { navController.navigateUp() }) }
-                composable("support") { SupportScreen(onNavigateBack = { navController.navigateUp() }) }
-                composable("privacy-policy") { PrivacyPolicyScreen(onNavigateBack = { navController.navigateUp() }) }
+                composable("home") {
+                    HomeScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                }
+                composable("profile") {
+                    ProfileScreen(onNavigateBack = { navController.navigateUp() })
+                }
+                composable("history") {
+                    HistoryScreen(onNavigateBack = { navController.navigateUp() })
+                }
+                composable("faq") {
+                    FAQScreen(onNavigateBack = { navController.navigateUp() })
+                }
+                composable("support") {
+                    SupportScreen(onNavigateBack = { navController.navigateUp() })
+                }
+                composable("privacy-policy") {
+                    PrivacyPolicyScreen(onNavigateBack = { navController.navigateUp() })
+                }
             }
         }
     }
@@ -131,9 +149,7 @@ class MainActivity : ComponentActivity() {
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
                     appOpenAd = ad
-                    // Do not auto-show here; will show in onResume once per launch
                 }
-
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     appOpenAd = null
                 }
@@ -147,7 +163,6 @@ class MainActivity : ComponentActivity() {
                 override fun onAdDismissedFullScreenContent() {
                     appOpenAd = null
                 }
-
                 override fun onAdFailedToShowFullScreenContent(error: AdError) {
                     appOpenAd = null
                 }
