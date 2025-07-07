@@ -5,7 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
-import androidx.compose.material3.rememberSnackbarHostState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,83 +20,96 @@ fun SignUpScreen(
     onSignUpSuccess: () -> Unit,
     viewModel: AuthViewModel = viewModel()
 ) {
-    val scope = rememberCoroutineScope()
+    val uiState by viewModel.authState.collectAsState()
     val snackbarHostState = rememberSnackbarHostState()
+    val scope = rememberCoroutineScope()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    val authState by viewModel.authState.collectAsState()
+    val isFormValid = email.isNotBlank() && password.isNotBlank()
+    val isLoading = uiState is AuthState.Loading
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
-            )
+    // Handle auth state changes
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            AuthState.SignUpSuccess -> onSignUpSuccess()
+            is AuthState.Error -> {
+                snackbarHostState.showSnackbar((uiState as AuthState.Error).message)
+            }
+            else -> {}
+        }
+    }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { scope.launch { viewModel.signUp(email, password) } },
-                enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
-                modifier = Modifier.fillMaxWidth()
+    AuthScreenScaffold(
+        snackbarHostState = snackbarHostState,
+        isLoading = isLoading,
+        errorMessage = (uiState as? AuthState.Error)?.message,
+        content = { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .padding(paddingValues),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("Sign Up")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextButton(onClick = onNavigateToSignIn) {
-                Text("Already have an account? Sign In")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            when (authState) {
-                is AuthState.Loading -> CircularProgressIndicator()
-                is AuthState.Error -> Text(
-                    text = (authState as AuthState.Error).message,
-                    color = MaterialTheme.colorScheme.error
+                EmailField(
+                    value = email,
+                    onValueChange = { email = it }
                 )
-                AuthState.SignUpSuccess -> LaunchedEffect(Unit) {
-                    onSignUpSuccess()
-                }
-                AuthState.ResetSuccess -> LaunchedEffect(Unit) {
-                    snackbarHostState.showSnackbar("Password reset email sent.")
-                }
-                else -> Unit
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                PasswordField(
+                    value = password,
+                    onValueChange = { password = it },
+                    isVisible = passwordVisible,
+                    onVisibilityChange = { passwordVisible = it }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SignUpButton(
+                    enabled = isFormValid && !isLoading,
+                    onClick = { scope.launch { viewModel.signUp(email, password) } }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                SignInNavigationButton(
+                    enabled = !isLoading,
+                    onClick = onNavigateToSignIn
+                )
             }
         }
+    )
+}
+
+@Composable
+private fun SignUpButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Sign Up")
+    }
+}
+
+@Composable
+private fun SignInNavigationButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled
+    ) {
+        Text("Already have an account? Sign In")
     }
 }
