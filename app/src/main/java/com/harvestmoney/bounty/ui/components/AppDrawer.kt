@@ -2,6 +2,8 @@ package com.harvestmoney.bounty.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.History
