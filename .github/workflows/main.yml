@@ -28,28 +28,20 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        build-tools-version: "34.0.0"
+        build-tools-version: "35.0.0"
         ndk-version: "25.2.9519653"
         cmake-version: "3.22.1"
+        sdk-platform: "android-35"
 
-    - name: Grant execute permission to Gradle
-      run: chmod +x ./gradlew
-
-    - name: Clean and regenerate Gradle config
+    - name: Clean Gradle cache
       run: |
         rm -rf ~/.gradle/caches/
         rm -rf ~/.gradle/wrapper/
         rm -rf .gradle
         ./gradlew --stop
-        
-    - name: Force Gradle plugin resolution
-      run: |
-        echo "systemProp.gradle.unsafe.configuration.on.demand=true" >> gradle.properties
-        echo "android.suppressUnsupportedCompileSdk=35" >> gradle.properties
-        echo "org.gradle.parallel=true" >> gradle.properties
 
     - name: Build with debug info
-      run: ./gradlew assembleDebug --stacktrace --scan --no-daemon
+      run: ./gradlew assembleDebug --stacktrace --no-daemon
 
     - name: Upload APK artifact
       if: success()
