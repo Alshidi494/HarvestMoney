@@ -27,6 +27,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
+      - name: 🔄 Refresh Dependencies
+        run: ./gradlew --refresh-dependencies
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
@@ -53,6 +56,9 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
+
+      - name: 🔄 Refresh Dependencies
+        run: ./gradlew --refresh-dependencies
 
       - name: Build Release AAB
         run: ./gradlew bundleRelease
