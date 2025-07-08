@@ -1,4 +1,4 @@
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // ✅ ضروري لتفعيل Version Catalog
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // ضروري لتفعيل Version Catalog
 
 pluginManagement {
     repositories {
@@ -7,7 +7,7 @@ pluginManagement {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
-                includeGroupByRegex("com\\.google\\.dagger.*") // ✅ لإتاحة تحميل Hilt plugin
+                includeGroupByRegex("com\\.google\\.dagger.*") // لإتاحة تحميل Hilt plugin
             }
         }
         mavenCentral()
@@ -20,6 +20,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+    }
+    
+    versionCatalogs {
+        create("libs") {
+            from(files("gradle/libs.versions.toml"))
+        }
     }
 }
 
