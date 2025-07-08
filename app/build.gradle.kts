@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id("kotlin-kapt") // لتفعيل kapt
-    alias(libs.plugins.google.services) // Firebase
-    alias(libs.plugins.dagger.hilt.android) // Hilt DI
+    id("kotlin-kapt")
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.dagger.hilt.android)
 }
 
 android {
@@ -63,40 +63,38 @@ android {
 
 dependencies {
     // AndroidX & Compose
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.`androidx.core.ktx`)
+    implementation(libs.`androidx.lifecycle.runtime.ktx`)
+    implementation(libs.`androidx.activity.compose`)
+    implementation(platform(libs.`androidx.compose.bom`))
+    implementation(libs.`androidx.ui`)
+    implementation(libs.`androidx.ui.graphics`)
+    implementation(libs.`androidx.ui.tooling.preview`)
+    implementation(libs.`androidx.material3`)
+    implementation(libs.`androidx.material.icons.extended`)
 
     // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.database.ktx)
+    implementation(platform(libs.`firebase.bom`))
+    implementation(libs.`firebase.auth.ktx`)
+    implementation(libs.`firebase.database.ktx`)
 
     // AdMob
-    implementation(libs.play.services.ads)
+    implementation(libs.`play.services.ads`)
 
     // Navigation
-    implementation(libs.androidx.navigation.compose)
+    implementation(libs.`androidx.navigation.compose`)
 
-    // Hilt (Dependency Injection)
+    // Hilt
     implementation("com.google.dagger:hilt-android:2.44")
     kapt("com.google.dagger:hilt-compiler:2.44")
-
-    // Optional: Hilt ViewModel integration with Compose
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     // Testing
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    androidTestImplementation(libs.`androidx.junit`)
+    androidTestImplementation(libs.`androidx.espresso.core`)
+    androidTestImplementation(platform(libs.`androidx.compose.bom`))
+    androidTestImplementation(libs.`androidx.ui.test.junit4`)
+    debugImplementation(libs.`androidx.ui.tooling`)
+    debugImplementation(libs.`androidx.ui.test.manifest`)
 }
