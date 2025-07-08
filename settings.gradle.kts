@@ -1,6 +1,13 @@
 pluginManagement {
     repositories {
-        google() // بدون قيود content لضمان تحميل كل الـ plugins من Google
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+                includeGroupByRegex("com\\.google\\.dagger.*") // ✅ تم إضافته لحل مشكلة Hilt
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }
