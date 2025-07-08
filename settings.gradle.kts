@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Harvest Money"
+rootProject.name = "Harvest_Money"
 include(":app")
