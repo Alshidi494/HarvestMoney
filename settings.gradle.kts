@@ -1,4 +1,4 @@
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // ضروري لتفعيل Version Catalog
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // لتفعيل دعم النسخ النوعية
 
 pluginManagement {
     repositories {
@@ -21,10 +21,10 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
     }
-    
+
     versionCatalogs {
         create("libs") {
-            from(files("gradle/libs.versions.toml"))
+            from(files("gradle/libs.versions.toml")) // استيراد ملف النسخ مرة واحدة فقط
         }
     }
 }
