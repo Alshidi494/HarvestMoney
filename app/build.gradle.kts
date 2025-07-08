@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     id("kotlin-kapt") // لتفعيل kapt
     id("com.google.gms.google-services") // Firebase
-    id("dagger.hilt.android.plugin") // Hilt DI
+    alias(libs.plugins.dagger.hilt.android) // Hilt DI
 }
 
 android {
