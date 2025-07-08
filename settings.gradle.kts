@@ -10,18 +10,7 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
-    resolutionStrategy {
-        eachPlugin {
-            when (requested.id.toString()) {
-                "com.android.application" -> 
-                    useVersion(providers.gradleProperty("agpVersion").get())
-                "org.jetbrains.kotlin.android" -> 
-                    useVersion(providers.gradleProperty("kotlinVersion").get())
-            }
-        }
-    }
 }
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
