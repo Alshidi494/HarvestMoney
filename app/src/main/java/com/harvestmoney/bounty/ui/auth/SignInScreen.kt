@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
@@ -34,8 +36,8 @@ fun SignInScreen(
     // Handle auth state changes
     LaunchedEffect(uiState) {
         when (uiState) {
-            AuthState.SignInSuccess -> onSignInSuccess()
-            is AuthState.ResetSuccess -> {
+            AuthState.Success.SignIn -> onSignInSuccess()
+            AuthState.Success.PasswordReset -> {
                 snackbarHostState.showSnackbar("Password reset email sent.")
             }
             else -> {}
@@ -154,8 +156,7 @@ private fun PasswordField(
         onValueChange = onValueChange,
         label = { Text("Password") },
         singleLine = true,
-        visualTransformation = if (isVisible) VisualTransformation.None 
-                            else PasswordVisualTransformation(),
+        visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             PasswordVisibilityToggle(
                 isVisible = isVisible,
@@ -173,10 +174,8 @@ private fun PasswordVisibilityToggle(
 ) {
     IconButton(onClick = onToggle) {
         Icon(
-            imageVector = if (isVisible) Icons.Default.Visibility 
-                         else Icons.Default.VisibilityOff,
-            contentDescription = if (isVisible) "Hide password" 
-                              else "Show password"
+            imageVector = if (isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+            contentDescription = if (isVisible) "Hide password" else "Show password"
         )
     }
 }
