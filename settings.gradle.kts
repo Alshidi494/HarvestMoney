@@ -1,4 +1,4 @@
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // لتفعيل دعم النسخ النوعية
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // لتفعيل دعم Version Catalogs
 
 pluginManagement {
     repositories {
@@ -7,7 +7,7 @@ pluginManagement {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
-                includeGroupByRegex("com\\.google\\.dagger.*") // لإتاحة تحميل Hilt plugin
+                includeGroupByRegex("com\\.google\\.dagger.*")
             }
         }
         mavenCentral()
@@ -24,7 +24,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            from(files("gradle/libs.versions.toml")) // استيراد ملف النسخ مرة واحدة فقط
+            from(files("gradle/libs.versions.toml")) // ✅ لا تكرر هذه السطر
         }
     }
 }
