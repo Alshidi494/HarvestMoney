@@ -1,3 +1,5 @@
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS") // ✅ ضروري لتفعيل Version Catalog
+
 pluginManagement {
     repositories {
         google {
@@ -5,7 +7,7 @@ pluginManagement {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
-                includeGroupByRegex("com\\.google\\.dagger.*") // ✅ تم إضافته لحل مشكلة Hilt
+                includeGroupByRegex("com\\.google\\.dagger.*") // ✅ لإتاحة تحميل Hilt plugin
             }
         }
         mavenCentral()
